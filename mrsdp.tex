@@ -1,0 +1,555 @@
+\documentclass[11pt]{article}
+\usepackage{color}
+% \usepackage{makeidx}
+\usepackage{amsmath}
+% \usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{multicol}
+\usepackage{indentfirst}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+
+%Nota: Para hacer el index, uno utiliza \index{palabra_para_ser_indexada} DESPUES de la palabra que uno quiere indexar
+
+%----Title, Author and date----
+\title{Mathematically Rigorous Software Design \\ \emph{with pointers}}
+\author{Wilson E. Alvarez$^{1}$, Dr. Marko Sch\"utz$^{2}$\footnote{Project supervisor} \\ \url{wilson.alvarez@upr.edu}$^{1}$, \url{marko.schutz@upr.edu}$^{2}$} \date{\today}
+
+
+
+%----Definition Environment----
+\newcounter{definition}
+\newenvironment{definition}[1][]{\stepcounter{definition}\par\medskip\noindent
+\textbf{Definition~\thesection.\thedefinition #1} \rmfamily}{}
+
+%----Lemma Environment----
+\newcounter{lemma}
+\newenvironment{lemma}[1][]{\stepcounter{lemma}\par\medskip\noindent
+\textbf{Lemma~\thesection.\thelemma #1} \rmfamily}{\medskip}
+
+%----Theorem Environment----
+\newcounter{theorem}
+\newenvironment{theorem}[1][]{\stepcounter{theorem}\par\medskip\noindent
+\textbf{Theorem~\thesection.\thetheorem #1} \rmfamily}{\medskip}
+
+%----Example Environment----
+\newcounter{example}
+\newenvironment{example}[1][]{\stepcounter{example}\par\medskip\noindent
+\textbf{Example~\thesection.\theexample #1} \rmfamily}{\medskip}
+
+%----Case Environment----
+\newcounter{case}
+\newenvironment{case}[1][]{\stepcounter{case}\par\medskip\noindent
+\textbf{Case~\thesection.\thecase #1} \rmfamily}{\medskip\hfill$\square$}
+
+%----Rule Environment----
+\newcounter{baberrules}
+\newenvironment{baberrules}[1][]{\stepcounter{baberrules}\par\medskip\noindent
+\textbf{Case~\thesection.\thebaberrules #1} \rmfamily}{\medskip}
+
+
+%----Result Environment----
+\newcounter{result}
+\newenvironment{result}[1][]{\stepcounter{result}\par\medskip\noindent
+\textbf{Result~\theresult. #1} \rmfamily}{\medskip}
+
+
+%---Proof Environment----
+\def\QEDmark{$\blacksquare$}
+\newenvironment{proof}[1][]{\par\medskip\noindent
+\textbf{Proof~ #1} \rmfamily}{\medskip\hfill\QEDmark}
+
+
+
+\begin{document}
+%\begin{center}
+%University of Puerto Rico\\
+%Mayag\"uez Campus\\ %Department of Mathemathics
+%\end{center}
+\maketitle
+
+%\begin{center} %\url{wilson.alvarez@upr.edu} %\end{center}
+
+\begin{abstract}
+Small software bugs, such as the case of Therac-25\cite{therac} and the rocket Ariane 5 \cite{rocket}\cite{rocket2}, have cost at least three lives and about 7 billion dollars of loss. An introduction of memory locations and two new operators to an error-free software design work \cite{baber} is given. An analysis shows that \cite{baber} still holds true in data environments where memory locations are added to its program variables. Only a simple modification to portions of \cite{baber} is required.
+\end{abstract}
+
+%%--- Start: Table of Contents --- %\newpage %\tableofcontents %\newpage %%--- End: Table of Contents ---
+
+\section{Introduction} %\addcontentsline{toc}{section}{Introduction}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+%---End Counter Reset ---
+
+Between 1985 and 1987, a medical radiation therapy machine, called Therac-25 and produced by Atomic Energy of Canada Limited, killed three patients by treating them with a dose of radiation of about a hundred times the intended dose. The cause: a software bug in the machine\cite{therac}. On September 21, 1997, a crew member of the USS Yorktown (DDG-48/CG-48) entered data in a computer network which caused a buffer overrun ``crashing the entire network and causing the ship to lose control of its propulsion system'', leaving the passengers in the middle of the ocean\cite{windows}. On August 14, 2003, a power outage on the northeast of the United States, and part of Canada, which left about fifty five million people without power was caused by a software bug that prevented the system administrators from receiving important error messages\cite{unixbug}. On the 4th of June 1996 the launch of the rocket Ariane 5 ended in a failure when a software error occurred just about 40 seconds after take off. About 7
+billion dollars were wasted in the project\cite{rocket}\cite{rocket2}. These four cases of software design mistakes, which are but a handful of what has happened in history, motivate the study of error-free software design.
+
+% Today's software development methods, not that different from that of the mid 80's, scream for new methods of software developing that yield no error at all. This way not only we would rid ourselves of the need of giving maintenance to programs due to some bugs that were found, but we would also make sure that by using medical devices similar the Therac-25 we would not be risking anybody's life.
+
+On September 9, 2002, Robert L. Baber released a book titled ''Mathematically Rigorous Software Design" where he talks about the requirements for developing error-free software \cite{baber}. From touching very general aspects to some other particular ones in software development, Baber was able to prove mathematically the veracity of his propositions, but \cite{baber}, however, does not include pointers in his analysis, and thus does not include two operators found in today's software design: the \emph{addressOf} operator and the \emph{dereference} operator.
+
+The goal of this study is to expand \cite{baber} by adding the mentioned program variable (i.e. the pointer), the \emph{address of} operator, and the \emph{dereference} operator. In the following three sections you will find a brief summary of the elements that make the very foundation of \cite{baber} with their corresponding definitions, according to \cite{baber}, and some practical meanings and examples. After, in the following sections, we will explain explicitly what needs to be changed in \cite{baber} so that it continues to work even with the addition of memory locations and the mentioned operators and a few particular examples will be considered.
+
+%For the sake of simplicity, that the only thing that might be wrong with a program is its source code. That is, our focus is to create error-free source codes, and for that we assume that everything else is working just how it should.
+
+
+%After having done so, we proceeded to revise everything defined and proven so far in Baber's book which we will present soon, however due to the fact that adding memory locations to \cite{baber} does not change the evaluation of the currently available program variables, operators and statements in \cite{baber}, it can be concluded that \cite{baber} is not invalidated by this report. It is, in fact, only expanded.
+
+
+\section{Program Variables and Data Environments}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+%---End Counter Reset ---
+
+%The mathematical models of programs in \cite{baber} can be thought of as currently running programs right in the middle of execution.
+Just as in physics one might make mathematical models by ``stopping time'' conveniently to analyze or calculate momentum, force, work, etc, at some point or interval of time, Baber's mathematical models of programs can be thought of as currently running programs that are being stopped right before the execution of a statement. At that point in time, the modeled program may have some data allocated in memory for which the statements have access to. This inspires the introduction of Baber's first definition:
+
+\begin{definition} \emph{Program Variable} \\
+A program variable is an ordered triple that contains:
+\begin{enumerate}[noitemsep]
+\item the name of the variable,
+\item the set of possible values the variable can hold, and
+\item the value the variable is currently holding.
+\end{enumerate}
+\end{definition}
+
+For example, ($x,\mathbb{Z},3$) and ($n,\mathbb{Q},5$) are program variables to which some statement has access to, whereas ($r,\mathbb{R},2i$) and ($z,\mathbb{N},-2$) are not because their values are not within the variables' corresponding set. Note that since the value of the program variable must correspond to a set given in the ordered triple, it is not allowed to have a program variable $x$ such that its set is $\varnothing$. That is, the triple $(x,\varnothing,p)$ is not a program variable since $p\notin\varnothing$.
+
+Now, going back to that point in time before where a statement is about to be executed, it is clearly possible that the statement may have access to one or more program variables. This inspires the following definition:
+
+\begin{definition} \emph{Data Environments} \\
+A data environment is a sequence of program variables.
+\end{definition}
+\medskip
+%Important: the data environment is a finite sequence of program variables because if it weren't, then evaluation of a variable name on a data environment who has undergone through an infinite amount of variable declarations is not defined. We want this to be defined. See the definition of the declare statement and the variable value look-up defined right after that definition.
+
+Using the previous example, it is clear that the sequence $d=\{(x,\mathbb{Z},3)\}$ is a data environment, whereas $d'=\{(x,\mathbb{Z},3),(n,\mathbb{Q},5),(z,\mathbb{N},-2)\}$ is not because $z$ is not a program variable since $-2$ is not in $\mathbb{N}$.
+
+The evaluation of a variable name in a statement usually results in the substitution of their names for their values in a given a data environment. For example, let $d_0=\{(x,\mathbb{Z},3),(z,\mathbb{Q},5)\}$ and $d_1=\{(x,\mathbb{R},3.14),(z,\mathbb{Q},42)\}$. Clearly, $d_0$ and $d_1$ are data environments, but note that $x(d_0)=3$ and that $x(d_1)=3.14$. The expression $(x+z).d_0=x.d_0+z.d_0=3+5=8$, whereas $(x+z).d_1=45.14$. That is, the values that program variables are assigned change with the data environments that they are in. Mathematically, given a program variable $x$ that can hold any value from the set $K$, $x$ is defined to be a function from $\mathbb{D}|_{x} \to K$ where $\mathbb{D}|_x$ is the set of all data environments that contain the program variable $x$. The assumption of the existence of the set $\mathbb{D}$ is not troublesome in practice\cite{baber}, yet it falls into Russell's paradox. For more information on this topic see page 8 of \cite{baber}.
+
+%Now, since statements have access to program variables, as mentioned earlier, this statements can be pictured as functions that take a set of data environments as their argument and return another set of data environments according to the statement $S$. We let $\mathbb{D}$ denote the set of all data environments.
+
+
+\section{Statements}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+
+One of the main purposes of \cite{baber} was to ``familiarize the student and reader with the basic concepts underlying correctness proofs''\footnote{see page 6 of \cite{baber}} which includes proof rules for software development that helps make the verification of the veracity of propositions faster. Informally, these rules help ensure that a statement is defined and will yield the desired results right before it is executed. This study focuses on that area too, but through the expansion of \cite{baber} such that it appeals more to other programming languages that make use of pointers. Therefore, we will begin this section with the following definition:
+
+\begin{definition} \emph{Statement} \\
+A statement is a function that changes a data environment into another data environment.
+\medskip
+\end{definition}
+
+More precisely, we can see the statements $S$ as functions from $\mathbb{D} \to \mathbb{D}$. That is, given a a data environment $d_1$, applying the statement $S$ to $d_1$ will yield $d_2$, and applying the statement $S$ to $d_2$ will yield $d_3$, and so on. Note that the all these data environments may actually be equal because the statement, by definition, does not necessarily change a data environment into a \emph{different} data environment. This inspires the following statement definition:
+
+\begin{definition} \emph{Null Statement} \\
+The null statement is an function that takes a data environment as its argument but does nothing to it. \medskip
+\end{definition}
+
+The null statement can be thought of as the identity function. That is, for a data environment $d$, $\texttt{null}(d)=d$. Now, since statements work on data environments and data environments themselves are made of program variables, when the need of storing new information in memory arises, the ability to add program variables to a data environment surely comes in handy. This gives purpose for the following definition:
+
+\begin{definition} \emph{Declare Statement} \\
+The declare statement is an function that adds a program variable through the \emph{left} of the given data environment. \medskip
+\end{definition}
+
+That is, the declare statement can be seen as a function from the set of all data environments $\mathbb{D}$ to the same set, given a name for the variable. For example, given the data environment $d=\{(p,\mathbb{Q^*},\sqrt{2})\}$, the declare statement: (\texttt{declare} $(l,\mathbb{N},1))$.$d$ will result in a new data environment, say $d'$, equal to  $\{(l,\mathbb{N},1)),(p,\mathbb{Q^*},\sqrt{2})\}$. Note that the definition of the declare statement does not exclude the declaration of program variables with the same name. In the case that there are two or more variables with the same name in a data environment, the evaluation of the variable name will result in the value of the first variable found from left to right in the data environment. For example, let $d=\{(z,\texttt{Strings}, `\texttt{abc}\textrm')),(z,\mathbb{N},42)\}$, then, $z(d)=`\texttt{abc}\textrm'$. Also, given an expression $E$ defined in a data environment $d$, the evaluation of an array variable, say $x_E$, occurs as follow: first the expression $E$ is evaluated and then the
+array variable name with the resulting
+expression value is evaluated in the data environment. Symbolically, $x_E.d=(x_{E.d}).d$. For example, let $d=\{(x_{10},\
+\mathbb{R},23),(x_{9},\mathbb{N},3),(x_{2},\mathbb{Z},-7)\}$. Then, the expression $x_{x_9-x_2}$ in $d$ is the same as $(x_{x_9-x_2}).d=(x_{x_9.d-x_2.d}).d=x_{(3-(-7))}=x_{10}=23$.
+
+In cases where there is a limited amount of memory or memory management is needed, releasing or deleting program variables is certainly necessary. This gives purpose to the following definition:
+
+\begin{definition} \emph{Release Statement} \\
+A release statement is an function that takes a variable name and a data environment as arguments and returns a data environments in which the first program variable found, from left to right, with that name in the data environment has been eliminated. \medskip
+\end{definition}
+
+In the case where there is more than one program variable with the same name in a data environment, the release statement will release the first program variable found from left to right.
+
+For example, if $d=\{(z,\texttt{Strings}, `\texttt{abc}\textrm'),(z,\mathbb{N},42)\}$, executing the statement $(\texttt{release } z).d$ will result in a new data environment, say $d'$, equal to $\{(z,\mathbb{N},42)\}$. In the case that there is no variable with the given name, the release statement will be the same as the null statement.
+
+When the need for changing the value of a program variable arises, \cite{baber} gives the following definition:
+
+\begin{definition} \emph{Assignment Statement} \\
+The assignment statement is an function that takes a program variable in a data environment and changes its value. \medskip
+\end{definition}
+
+For example, executing $x:=5$ will change the value of the variable $x$ to $5$ if two things are given: first, $x$ is in the data environment, and second the value that is assigned to the variable, in this case $5$, is an element of the set of possible values for $x$. That is, we can execute $(x:=5).d$ if and only if the program variable $(x,\{5\}\cup\mathbb{A},q)$ is in $d$, where $\mathbb{A}$ can be any set. %Formally, the assignment statement is a function that takes a data environment, a name of a variable in that data environment, the set of that variable, and the new value that the variable will hold which corresponds to the previous set of the variable. In other words, the domain of the assignment statement is a  is the set $\mathbb{D}|_x \times Set(x) \times r$, where $\mathbb{D}|_x$ is the set of all data environments that contain the variable named $x$, $Set(x)$ represents the current set of $x$ and $r$ is an element of that set. <
+
+Now, in many real-life situations there might be times when there are at least two options upon which one can choose a possible course of action given an environment or desire that enforces our decision. In the most simple case we would have only two courses of action and a desire that, if satisfied, will help choose one course of action, but otherwise will choose the other course of action. This inspires the following definition:
+
+\begin{definition} \emph{If-Else statement} \\
+Let $d$ be a data environment and let $B$ be a boolean expression defined in $d$. Then the statement \texttt{If} $B$ \texttt{then} $S_1$ \texttt{else} $S_2$ \texttt{endif}
+will result in:
+\begin{itemize}[noitemsep]
+ \item $S_1.d$ if $B.d$ is true, or
+ \item $S_2.d$ if $B.d$ is false
+\end{itemize}
+\end{definition}
+
+For example, let $d=\{(x,\mathbb{Z},10)\}$. The statement \texttt{If} $x=1$ \texttt{then} $x:=2$ \texttt{else} $x:=3$ \texttt{endif} in $d$ will result in $(x:=3).d$, which results in the data environment $d'=\{(x,\mathbb{Z},3)\}$.
+
+Nowadays, many home appliances such as microwave ovens and washing machines repeat a single process until the user chooses not to do so, or until a specific goal has met. In the case of the microwave ovens, the user usually commands the microwave oven to spin the plate and to send microwaves until the end of the given time has been met. This action of doing something until a certain condition has been met is what inspires the following definition:
+
+\begin{definition} \emph{While Loop} \\
+Let $d$ be a data environment and let $B$ be a boolean expression defined in $d$. Suppose that there is an element of the boolean expression $B$ such that each time the statement $S$ is executed, that element changes which might, or might not, change the value of the boolean expression $B$ when evaluated in the data environment $d$. Then, the statement \texttt{while} $B$ \texttt{do} $S$ \texttt{endwhile}, abbreviated $\texttt{W}(B,S)$, will result in:
+\begin{itemize}[noitemsep]
+ \item $\texttt{W}(B,S).S(d)$ if $B$ is true.or
+ \item $\texttt{null}.d$ if $B$ is false
+\end{itemize}
+\end{definition}
+
+For example, let $d=\{(i,\mathbb{N},1)\}$. Executing the statement \texttt{while} $i<2$ \texttt{do} $i:=i+1$ \texttt{endwhile} in $d$, which is the same as $(\texttt{W}(i<2,i:=i+1)).d$  will result in  $\texttt{W}(i.d<2,i:=i.d+1)=\texttt{W}(1<2,i:=2)$ Since $1<2$ is true, $i$ becomes $2$ and $\texttt{W}(i<2,i:=i+1)$ is executed again with the new $i$ in, say, $d'$. Therefore, $\texttt{W}(i<2,i:=i+1).d'=\texttt{W}(2<2,i:=3).d'$. Since $2<2$ is false, then  $\texttt{W}(i<2,i:=i+1).d'=\texttt{null}.d'=d'$, where the resulting data environment $d'=\{(z_1,\mathbb{Z},2),(i,\mathbb{N},2)\}$.
+
+
+\section{Preconditions and Postconditions}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+%---End Counter Reset ---
+
+
+As we mentioned earlier, one of the main purposes of \cite{baber} was to familiarize the reader with rules of software development such that the definedness of a statement, that is about to be executed, would be ensured with respect to a subset of the range of the statement. In other words, if we look at the statements as functions from data environments to data environments, his goal was to show the reader the available ways of describing precisely and exactly the preimage of a statement and its range. In \cite{baber}, the preconditions and postconditions are generalized ideas of the domain and range of a function. The former two, additionally, might also hold important information about the platform upon which the code is being developed for, a property of the statements such as the loop invariant\footnote{see page 66 of \cite{baber}, for more information about the loop invariant}, or any other information expressed as a boolean expression.
+
+%Informally, preconditions, statements and postconditions can be seen this way: suppose that to your left you have a basket filled with some objects in it, to your right you have an empty basket, and you are given the task to take each object from the left basket, check if they emit light or not, and deposit only the ones that emit light in the basket to your right. This is analogous to what a precondition, a statement and a postcondition are. To your left, inside the basket, you have the precondition: ``some objects that either emit light or not''. Your action, the statement, represents the test of checking if an object emits light or not and you deposit only the objects that emit light into the basket to your right.the shapeable objects into a cube and deposit them into the empty basket, and to your right you have the postcondition, that is the postcondition. This is analogous to what an Ordinary Precondition is:
+
+\begin{definition} \emph{Ordinary Precondition} \\
+Let $V$ and $P$ be subsets of $\mathbb{D}$. Then, $V$ is a precondition of a given postcondition $P$ with respect to a statement $S$ if and only if for every $d \in V \cap S^{-1}(\mathbb{D})$, $S(d)$ is in $P$.\medskip
+\end{definition}
+
+Note that the definition of the Ordinary Precondition does not state if the precondition $V$ is a subset of the preimage of $S$, that is $S^{-1}(\mathbb{D})$. Therefore, an ordinary precondition does not ensure us that the statement $S$ will be defined since $V\cap S^{-1}(\mathbb{D})$ might actually be empty. This inspires the definition of a new type of precondition:
+
+\begin{definition} \emph{Strict Precondition} \\
+Let $V$ and $P$ be subsets of $\mathbb{D}$. Then $V$ is a strict precondition of a given postcondition $P$ with respect to a statement $S$ if and only if $V$ is an ordinary precondition and $V\subseteq S^{-1}(\mathbb{D})$. \medskip
+\end{definition}
+
+Note that since $V\subseteq S^{-1}(\mathbb{D})$, strict preconditions ensure us that the statement $S$ will always be defined for any data environment $d$ in $V$, however, since the precondition $V$ is simply a subset of $S^{-1}(\mathbb{D})$, it does not ensure us that $V$ contains all the data environments for which $S$ maps to $P$. In other words, strict preconditions do not ensure us that $S^{-1}(P)\subseteq V$. This inspires the following definition:
+
+\begin{definition} \emph{Complete Precondition} \\
+Let $V$ and $P$ be subsets of $\mathbb{D}$. Then $V$ is a complete precondition of a given postcondition $P$ with respect to a statement $S$ if and only if $V$ is an ordinary precondition and $S^{-1}(P)\subseteq V$. \medskip
+\end{definition}
+
+Now, note that the strict precondition also tells us that for any $d \in V$, $S(d) \in P$. That is, $V\subseteq S^{-1}(P)$ due to its definition\footnote{see ``Lemma for a strict precondition'' on page 21 of \cite{baber} for a formal proof}. And also note that the complete precondition tells us that  $S^{-1}(P)\subseteq V$ in its definition. It is, therefore, clear that a strict and complete precondition $V$ will be equal to $S^{-1}(P)$.\footnote{see ``Lemma for a strict and complete precondition'' on page 22 of \cite{baber} for a formal proof}
+
+
+\section{Analysis of Program Variables and Operators}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+%---End Counter Reset ---
+
+As we mentioned earlier, the purpose of this study is to integrate the pointer variable, the dereference and addressOf operators into \cite{baber} such that it would appeal more to programming languages that make use of these. We, therefore, begin with the definition of the new program variables:
+
+\begin{definition} \emph{New Program Variables} \\
+A new program variable is an ordered \emph{quadruple} containing:
+\begin{enumerate}[noitemsep]
+\item the name of the variable,
+\item the set of possible values that the variable can hold,
+\item the value that the variable is currently holding, and
+\item a unique memory address.
+\end{enumerate}
+\end{definition}
+
+
+Clearly, the only difference between this definition and Definition 2.1 is the addition of the \emph{unique} memory address to the program variable. This uniqueness can be formally stated as follow: given any program variable in a data environment, there does not exist a different program variable in the same data environment with the same memory address. This inspires the redefinition of the data environments:
+
+\begin{definition} \emph{New Data Environments} \\
+ A sequence is a new data environment if and only if:
+ \begin{enumerate}[noitemsep]
+  \item its elements are new program variables
+  \item for every program variable in the data environment there does not exist a different program variable in the same data environment with the same memory address (i.e. their memory addresses are unique)
+ \end{enumerate}
+\end{definition}
+
+This uniqueness can be stated symbolically as follows: $\forall x \in d$ $\neg \exists y \in d$ such that $y\neq x$ and the memory address of $x$ is the same as the memory address of $y$. Which can also be restated as: $\forall x,y \in d$, if $y \neq x$, then the $\text{ memory address of }x$ is different from the memory address of $y$.
+
+As a convention, from here on we are going to use the terms program variable and data environment to refer to the new program variable and the new data environment respectively. To refer to the program variables and data environments from the previous sections we will write old program variables and old data environments.
+
+
+Now, note that due to the uniqueness of the memory addresses, sequence operations on data environments need to be considered carefully. For example, let $d_0=\{(n,\mathbb{Z},3, addr1)\}$ and $d_1=\{(z,\mathbb{R},.33, addr1)\}$. The concatenation of these two sets does not yield a data environment. That is, $d_0 \| d_1 = \{(n,\mathbb{Z},3, addr1)\}\| \{(z,\mathbb{R},.33, addr1)\} = \{(n,\mathbb{Z},3, addr1), (z,\mathbb{R},.33, addr1)\}$, but $n$ and $z$ have the same memory addresses which makes $d_0 \| d_1$ differ from a data environment. This can be fixed by releasing and declaring the variables in either $d_0$ or $d_1$ such that their memory addresses differ.
+
+Since \cite{baber} takes into consideration the concatenation of data environments, to address this issue we formulated a necessary and sufficient condition such that for the concatenation of any number of data environments, the result will always yield a data environment. We now to proceed to state this result formally, with $\mathbb{D}^{*}$ being the set of all \emph{new} data environments.
+
+%When intersecting two data environments, however, there does not arise any difficulty since from the very definition of the intersection of sets we eliminate any variables with different memory addresses. For example, consider $d_0$ and $d_1$ as in the previous example. Then $d_0 \cap d_1 = \{\} = \varnothing$ is in fact a data environment since the statement ``for every element $x$ in $d_0 \cap d_1$, $x$ is a program variable'' cannot be negated. We now proceed to state these two results formally.
+
+\begin{result}\emph{Sufficient and necessary condition for conc. of new data env.\footnote{conc. = concatenations}$^{,}$\footnote{env. = environments}} \\
+ Let $\mathbb{K}$ be a subset of $\mathbb{D}^{*}$. Then, the concatenation of arbitrary data environments, namely $\|\mathbb{K}$, results in a data environment if and only if for each program variable $x$ in each data environment $d_0$ of $\mathbb{K}$ there does not exist another program variable $y$ in any data environment $d_1$ of $\mathbb{K}$ such that $y\neq x$ and the memory address of $x$ is the same memory address of $y$
+\end{result}
+
+Symbolically, the above statement can be restated as follows: Let $\mathbb{K}$ be a subset of $\mathbb{D}^{*}$. $\|\mathbb{K}$ is a data environment $\Leftrightarrow$ $\forall x\in d_0\in\mathbb{K}$ $\neg \exists y \in d_1 \in \mathbb{K}$ such that $y\neq x$ and $\text{the memory address of }x$ is the same as the memory address of $y$. Which is the same as: $\|\mathbb{K}$ is a data environment $\Leftrightarrow$ $\forall x\in d_0\in\mathbb{K}$ $\forall y \in d_1 \in \mathbb{K}$, $y=x$ or $\text{the memory address of }x$ differs from memory address of $y$ but not both. We proceed to prove the latter.
+
+\begin{proof}\\
+ $(\Rightarrow)$ Let $\mathbb{K}$ be a subset of $\mathbb{D}^{*}$. Suppose the concatenation of arbitrary data environments in $\mathbb{K}$ results in a data environment. Let $d_0$ be a data environment in $\mathbb{K}$. Let $x$ be a program variable in $d_0$. Let $d_1\in\mathbb{K}$ and let $y$ be a program variable in $d_1$. We want to prove that either $y=x$ or $\text{the memory address of }x$ differs from the memory address of $y$.
+
+ First, note that $d_0$ and $d_1$ are subsets of $\|\mathbb{K}$, but $\|\mathbb{K}$ is a data environment. Therefore, either $y=x$ or the memory address of $x$ differs from the memory address of $y$ by the definition of data environments.\medskip
+
+\noindent $(\Leftarrow)$ Let $\mathbb{K}$ be a subset of $\mathbb{D}^{*}$. Suppose that $\forall x\in d_0\in\mathbb{K}$ $\forall y \in d_1 \in \mathbb{K}$, either $y=x$ or the memory address of $x$ differs from the memory address of $y$. Consider the concatenation of all the data environments in $\mathbb{K}$. Our goal is to prove that $\|\mathbb{K}$ is a data environment, but note that $\|\mathbb{K}$ is already made of program variables, therefore we need only to prove the uniqueness of their memory addresses. That is, we need to prove that $\forall x,y \in \|\mathbb{K}$, $y=x$ or the memory address of $x$ differs from the memory address of $y$, but not both.
+
+First, note that since $d_0$ and $d_1$ are arbitrary and are subsets of $\|\mathbb{K}$, the hypothesis can be restated as follows: $\forall x\in\|\mathbb{K}$ $\forall y \in \|\mathbb{K}$, either $y=x$ or the memory address of $x$ differs from the memory address of $y$. Which is, in fact, what we were looking for.
+% for any program variable in a data environment of $\mathbb{K}$, it does not matter which other different program variable in any data environment of $\mathbb{K}$ we compare it to, their memory addresses will be different. But since $d_0$ and $d_1$ are subsets of $\|\mathbb{K}$, this can be restated as follow: Now, note that $\|\mathbb{K}$ is the concatenation of all the data environments in $\mathbb{K}$, and $d_0$ and $d_1$ are arbitrary. This implies that all the program variables in $\|\mathbb{K}$ have unique addresses.
+\end{proof}
+
+
+The last two statements of our proof can also be seen this way. Say we pick the very first variable of $\|\mathbb{K}$. Due to the property stated by the hypothesis, the address of this variable is different from any other. That is, at the very least it is certain that the first two variables of $\|\mathbb{K}$ are different. Suppose we now pick the second program variable in $\|\mathbb{K}$. We already know that the first two program variables are different, but since the second variable is also different from any other, we have that at least the first three program variables in $\|\mathbb{K}$ are different, and so on.
+
+This result suggests that any statement in \cite{baber} that makes use of concatenations of data environments, or simply a single data environment, needs to be ``rewritten'' in order to add a memory uniqueness statement.
+%This is also applies to every occurrence of the concatenation of precondition and postconditions in \cite{baber} for they represent data environments with additional boolean information.
+%that helps define the properties of the data environments that are being taken into consideration.
+
+We now present our next result, which perhaps is somewhat trivial but still needs to be considered:
+
+\begin{result} \emph{Any subsequence of a data environment is a data environment} \\
+Formally, let $d$ be a data environment. If $A\subseteq d$, then $A$ is a data environment.
+\end{result}
+
+\begin{proof} \\
+First note that the elements of $A$ are program variables. Therefore, we only need to prove that the memory addresses of every program variable in $A$ are unique. Let $x$ be a program variable in $A$. Since $A\subseteq d$, $x$ is in $d$. Therefore, the memory address of $x$ is unique.
+\end{proof}
+%
+%\begin{result} \emph{The intersection of data environments yield a data environment} \\
+%The intersection of an arbitrary number of data environments will always yield a data environment.
+%\end{result}
+%
+%\begin{proof} \\
+%Let $\mathbb{K}$ be a subset of $\mathbb{D}^{*}$. Our goal is to prove that $\cap\mathbb{K}$ is a data environment. Again, $\cap\mathbb{K}$ is already made of program variables, therefore our goal is to prove that their memory addresses are unique.
+%
+%Let $d_0$ and $d_1$ be data environments in $\mathbb{K}$. Note that $d_0\cap d_1$ is a subset of $d_0$ and $d_1$. Therefore, by Lemma 5.1, $d_0\cap d_1$ is a data environment.
+%\end{proof}
+%
+%Note that the proof of our second result only proves that the intersection of two data environments result in a data environment. This result, however, can be used iteratively. That is, since we know that  $d_0\cap d_1$ is a data environment, its intersection with another data environment, for example $d_2$ will result in a data environment. That is, $(d_0\cap d_1)\cap d_2$. To this we can intersect another data environment $d_3$, which will result in $((d_0\cap d_1)\cap d_2)\cap d_3$ in a data environment, and so on.
+%
+%This result implies that any portion of \cite{baber} that uses intersections of preconditions and postconditions can be used freely with the addition of memory locations. That is, any statement in \cite{baber} that makes use of intersections, is also valid with the introduction of unique memory addresses to its program variables.
+
+Now that we have laid the foundations of what changes in \cite{baber} with the introduction of unique memory addresses, it is the perfect time to introduce two new operations to the field:
+
+\begin{definition} \emph{AddressOf Operator} \\
+The addressOf operator is a function that takes a variable name in a data environment as an argument and returns its memory address.
+\medskip
+\end{definition}
+
+That is, the addressOf operator is a function that goes from a data environment to the set of all memory addresses. For example, let $d=\{(x,\mathbb{C},2+4i,addr0\}$. Executing $(\texttt{addressOf}(x)).d$ will result in $addr0$. Formally, the domain of the addressOf operator is the set of all data environments in which the the given variable name is an element of, and its range is the set of all memory addresses.
+
+One of the purposes of adding unique memory addresses to the program variables is to be able to have access to the ``hidden'' variables in \cite{baber} that appear when two or more variables in a data environment have the same name. For example, in the data environment $d=\{(x,\mathbb{Z},4,addr0),(x,\mathbb{Q},\frac{4}{10},addr1)\}$, only the value $4$ can be accesses through the variable name $x$, and the second program variable $(x,\mathbb{Q},\frac{4}{10},addr1)$ is hidden from the statements. Given now that we have unique memory addresses in each program variable, we will be able to access the values of the hidden program variables through the following operator:
+
+\begin{definition} \emph{Dereference Operator} \\
+The dereference operator is a function that takes an address of a program variable in a data environment and gives access to the program variable whose address was given. \medskip
+\end{definition}
+
+For example, let $d$ be the same data environment as before. Executing (\texttt{dereference} $addr1).d$ will result in $\frac{4}{10}$. But executing $(\texttt{dereference } addr1 := 10)$ will change the value of the second variable $x$ in $d$ to $10$.
+
+This operator opens a new path for a new type of program variable, namely the pointer.
+
+\begin{definition} \emph{Pointer} \\
+A pointer is a program variable that holds as its value a memory address that points to a program variable that has a specific set of possible values. \medskip
+\end{definition}
+
+Formally, the domain of the dereference operator that is operating on a pointer is the set of all data environments such that: 1. the name of the pointer is in the data environment, 2. the address the pointer is currently holding is in the data environment, and 3. the set of possible values that the pointer can point to is the same as the set of possible values of the program variable at the address the pointer is currently holding as its value.
+
+For example let $\mathbb{Z}^*$ represent the set of all memory addresses that point to an integer variable. Suppose $d=\{(x,\mathbb{Z},42,addr0), (x,\mathbb{R},42,addr1)\}$. The statement (\texttt{declare } $(p,\mathbb{Z}^*, addr0, addr3)).d$ creates a pointer $p$ that when dereferenced \emph{can only give access to} program variables whose set is $\mathbb{Z}$. That is, the dereference operator that is operating on $p$ can access the program variable at the address $p$ is currently holding io if and only if $Set(\texttt{dereference}\ (p)).d = Set(z).d$, where $Set(\texttt{dereference}\ (p))$ refers to the set of possible values the pointer can point to.
+
+In this case, executing (\texttt{dereference} $p).d$ will result in $42$, but executing (\texttt{dereference} $p:=2).d$ will change the variable of the first $x$ in $d$ to $2$. Now, note that releasing $x$ in $d$ will result in the data environment $d'=\{(p,\mathbb{Z}^*, addr0, addr3), (x,\mathbb{R},42,addr1)\}$. Here, $p$ is now holding an address in memory that is not in $d'$. Also, assuming $p$ is holding the address $addr1$, dereferencing $p$ is undefined as it was design to point to an integer variable and not a real variable. In other words, it is undefined because $Set(\texttt{dereference }p)=\mathbb{Z}\neq Set(x)=R$.
+
+Whenever any of these two cases occur, we say that $p$\emph{ is defined}, but \emph{dereferencing $p$ is undefined}. That is, $p$ is defined whenever its value is a memory address regardless of which variable it is pointing to, and dereferencing $p$ is undefined either when its address points to a program variable of a different set than what it was designed for or its address is not in the data environment.
+
+
+
+
+Also, note that the definition of pointer can be iterated upon the pointer itself. That is, suppose that there is a pointer $p$ whose set of possible values is the set of all the memory addresses that point to an integer program variable, namely $\mathbb{Z}^{*}$. Then we can also have a pointer, say $p'$, whose possible values are the memory addresses of pointers that point to integer variables, namely the set $\mathbb{Z}^{**}$. In this case suppose $p'$ is holding the memory address of $p$. Since $p'$ holds the memory address of $p$, dereferencing $p'$ will be the same as accessing the value of $p$. But since the value of $p$ is actually the memory address of the integer variable, dereferencing $p'$ will be the same as evaluating the name $p$, which is also the same accessing the address of the integer program variable. Dereferencing $p'$ twice, will therefore be the same as dereferencing $p$ once which access the value of the integer variable.
+
+%As mentioned before, one of the main purposes of \cite{baber} was to find rules that would accelerate the development of a mathematically rigorous software design. Given the Results 1, and 2 in this section, it is clear that the rules proved by Baber in \cite{baber} still hold true even with the addition of unique memory addresses by simply applying the necessary and sufficient condition of the concatenation of data environments whenever a concatenation of data environments appears on \cite{baber}.
+
+\section{Analysis of Statements and Operators}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+%---End Counter Reset ---
+
+%Since the very foundation of \cite{baber} has now been verified\footnote{see the previous section for details} to work with the introduction of the unique memory addresses, it is time to verify the precondition and postconditions of each separate statement introduced by Baber in which the new program variables, data environments and operators are being used.
+
+Our goal in this section will be to find complete and strict preconditions for the given statements and postconditions that make use of pointers. That is, given a particular statement $S$ and a postcondition $P$, we will find a complete and strict precondition that such that $V=S^{-1}(P)$. We begin our analysis by considering the following case:
+
+%\begin{case} \emph{Declare Statement}
+%As mentioned before, the declare statement in \cite{baber} is a function that takes a data environment as its argument and adds a variable to it. Since that declare statement is not dependant on the current variables that its argument holds, the declare
+%\end{case}
+
+\begin{case} $\{\text{?}\}\ x:=1\ \{(\texttt{dereference } p)>1 \wedge x=1\}$ \\
+In general, the key to solving this kind of problem where one needs to find a precondition for a given statement and postcondition, is to know what the domain of the statement is and to assume that the statement is defined, from there we check if in the postcondition any change arise once the statement has been executed and from there we proceed to find the correct precondition.
+
+Assuming the statement is defined, but not executing it yet, we can unfold the postcondition of the above case which will give us the following:
+$$\{(\texttt{dereference }\ p) > 1 \wedge x = 1 \wedge (p = \texttt{addressOf}(x) \vee p \neq \texttt{addressOf}(x))\}$$
+which expands to
+$$\left\{
+ \begin{matrix}
+(\texttt{dereference}\ p) > 1 \wedge x = 1 \wedge p = \texttt{addressOf}(x) \\ \vee (\texttt{dereference}\ p) > 1 \wedge x = 1 \wedge p \neq \texttt{addressOf}(x)
+\end{matrix}
+\right\}$$
+which is equivalent to
+$$\left\{
+ \begin{matrix}
+x > 1 \wedge x = 1 \wedge p = \texttt{addressOf}(x) \\ \vee (\texttt{dereference }p)> 1 \wedge x = 1 \wedge p \neq \texttt{addressOf}(x))
+\end{matrix}
+\right\}$$
+Now, executing the statement, which we assumed was defined, will yield:
+$$\left\{
+ \begin{matrix}
+1 > 1\ \wedge\ 1 = 1\ \wedge\ p = \texttt{addressOf}(x) \\ \vee\ (\texttt{dereference}\ p) > 1\ \wedge\ 1 = 1\ \wedge\ p \neq \texttt{addressOf}(x)\end{matrix}
+\right\}$$
+which simplifies to
+$$\left\{
+ \begin{matrix}
+(\texttt{dereference}\ p) > 1\ \wedge\ p \neq \texttt{addressOf}(x)
+\label{resultingpostcondition}
+\end{matrix}
+\right\}$$
+
+
+Now, from Definition 3.5 we know that the domain of the assignment statement alone in this case is the set of all data environments which contain the numerical variable $x$ whose set of possible values contains, at the very least, the number $1$. Since the resulting postcondition \ref{resultingpostcondition} is, in fact, a set that contains the required properties of the pointer $p$ and also contains the domain of the assignment statement in this case, we can intersect the two to get the resulting correct precondition to the case above:
+
+$$\left\{
+ \begin{matrix}
+x\ \text{is numerical}\ \wedge (\texttt{dereference}\ p) > 1\ \wedge\ p \neq \texttt{addressOf}(x)
+\end{matrix}
+\right\}$$
+\end{case}
+
+%\begin{eqnarray} \label{original}
+%\{x \text{ is a numerical variable, where } 1\in Set(x)\}\text{ and }\{x=1\}
+%\end{eqnarray}
+%respectively.
+%
+%Now, any other boolean expression not covered by the general pre and postcondition of the assignment statement above needs to be taken care of. That is, the boolean expression $(\texttt{dereference } p)>1$, somehow needs to added to our precondition above. Now, it will be completely incorrect to simply add $(\texttt{dereference } p)>1$ as part of the precondition through a conjunction. The problem here is: we do not have information of which program variable the pointer $p$ is pointing to, and if it was pointing to $x$, in the postcondition we would have that $\texttt{dereference } p = 1 > 1$, which is clearly false.
+%
+%To tackle this issue, remember that ``the domain of the dereference operator that is operating on a pointer, is the set of all data environments such that:
+%\begin{enumerate}[noitemsep]
+%\item the name of the pointer is in the data environment,
+%\item the address the pointer is currently holding is in the data environment, and
+%\item the value that the dereference operator is accessing through the pointer corresponds to the dereferenced set of the set of the pointer.''
+% \end{enumerate}
+%
+% From here it is clear that in this case the name of the pointer is already in the data environment and we only need to take care of 2. and 3. of the above list. Therefore, apart from adding $\texttt{dereference } p = 1 > 1$ to \ref{original} above, we also need to add that the address the pointer is currently holding is different from the address of $x$, and that the $\texttt{Set(dereference } p) = \texttt{dereference Set(}p)$ which should be a set that contains numbers so that the boolean expression in the postcondition can be evaluated. Resulting in the following correct precondition:
+%$$\left\{
+% \begin{matrix}
+% x\in d,\ x \text{ is a numerical variable, where } 1\in Set(x),\\
+% \texttt{Set(deref.} p)=\texttt{deref.Set(}p), \texttt{deref.} p > 1\\ p \neq \texttt{addr.}x
+%\end{matrix}
+%\right\}$$
+%\end{case}
+
+\begin{case} $\{?\}\ p:=\texttt{addressOf}(g)\ \{\texttt{dereference } p>1\}$ \\
+As before, lets assume that the assignment statement above is defined, and lets unfold the postcondition.
+
+Note that the boolean expression $\texttt{dereference } p>1$ implies, due to the definition of the pointer $p$, that the $Set(\texttt{dereference}\ p)$ must be a set that contains numbers so that the boolean expression itself is defined. Thus, the expanded postcondition would be:
+
+$$\left\{
+ \begin{matrix}
+\texttt{dereference } p>1\ \wedge\ Set(\texttt{dereference}\ p)\ \text{contains numbers}
+\end{matrix}
+\right\}$$
+
+Now, executing the assignment statement above, we have that the postcondition actually is:
+$$\left\{
+ \begin{matrix}
+(\texttt{dereference } \texttt{addressOf}(g))>1 \\ \wedge\ Set(\texttt{dereference}\ \texttt{addressOf}(g))\ \text{contains numbers}
+\end{matrix}
+\right\}$$
+which simplifies to
+$$\left\{
+ \begin{matrix}
+(\texttt{dereference } \texttt{addressOf}(g))>1
+\end{matrix}
+\right\}$$
+which in this case is the correct precondition we were looking for.
+\end{case}
+
+
+%
+%In order to start building the precondition, we know from Definition 3.5 we know that the domain of this assignment statement is the set of all data environments which have $p$ as a program variable and since we are assigning a memory address as a value to $p$ we know that $p$ is a pointer, therefore this needs to be included in the precondition. Also, since $p$ has been assigned the memory address of $g$, this means that $\texttt{dereference Set}(p) = Set(g)$, which also needs to be included in the precondition.  Now, since the postcondition represents what is true after the statement $p:=\texttt{adress }g$ has been executed, this means that dereferencing $p$ in the postcondition is actually the same as calling the value of $g$ for, by that time, $p$ will have as its value the address of $g$. And, since dereferencing $p$ must yield a numerical value in order for the boolean statement $\texttt{dereference } p>1$ to be defined, this means that $g$ must, itself, be a numerical program variable too,
+%and, also, that the value of $g$ must be greater than $1$ since that inequality must be true. Therefore, the resulting correct precondition will be:
+%
+%$$\left\{
+%\begin{matrix}
+%p\in d,\ \texttt{dereference Set}(p) = Set(g), g>1
+%\end{matrix}
+%\right\}$$
+%\end{case}
+
+% while($*p!=15$) do $p=\&x[i]$ endwhile
+%
+% \texttt{If} $\texttt{dereference }p\neq 3$ \texttt{then} $p:=\texttt{\dereference x}$  \texttt{else} $p:= \texttt{address y}$ \texttt{endif}
+%
+% $\{\}release x\{dereference p = 1\}$
+\section{Results}
+%---Counter Reset----
+\setcounter{definition}{0}
+\setcounter{lemma}{0}
+\setcounter{theorem}{0}
+\setcounter{example}{0}
+%---End Counter Reset ---
+The proofs located in the fifth section (i.e. Result 1, and Result 2) show that \cite{baber} still hold true with a simple modification of some portions of \cite{baber}. That is, whenever a data environment appears in \cite{baber}, that portion needs to be rewritten to simply include that the address of each program variable in the data environment is unique, but whenever the concatenation of an arbitrary number of data environments appear in \cite{baber}, the following statement needs to be added since it ensures that the result of the operation will yield a data environment: ``$\forall x\in d_0\in\mathbb{K}$ $\forall y \in d_1 \in \mathbb{K}$, $y=x$ or $\text{the memory address of }x$ differs from memory address of $y$ but not both'', where $\mathbb{K}$ contains all the data environments entangled in the operation.
+
+
+% \section{Future Research}
+% %---Counter Reset----
+% \setcounter{definition}{0}
+% \setcounter{lemma}{0}
+% \setcounter{theorem}{0}
+% \setcounter{example}{0}
+% %---End Counter Reset ---
+% In this study we only considered two problems of the form $\{?\}S\{P\} \text{strictly and completely}$ that included memory locations, the dereference operator, and the addressOf operator. In other words, we only considered problems where, given a statement and a postcondition, a precondition was needed such that for any data environment in the precondition, the statement $S$ would be defined, the postcondition $P$ would hold true, and the found the precondition would include every possibility of data environments available that will hold the proposition ``$\{?\}S\{P\}$ strictly and completely'' true. Other problems of this type should also be explored, such as the construction of while loops and their loop invariants where the boolean expression of the loop, the statement in the loop or the postcondition contain a pointer. For example, a problem arises when, in a while-loop, a pointer is moving across program variables that are not defined in the precondition and the boolean expression of the loop. which depends completely on a single pointer. and some other constans is waidoes not hold true when the is moving across variables in an array
+%
+% Since we did not consider problems where a precondition and a postcondition were given, but not the statement, it will be worth looking into the construction of while-loops where problems in the construction of loop invariants might arise. It is important to point out that mathematical convergence in the
+
+
+
+
+
+%--------Begins Bibliography---------------------
+\newpage
+\begin{thebibliography}{99}
+\addcontentsline{toc}{section}{References}
+\bibitem{therac}
+    Leveson, Nany. Turner, Clark S. \emph{An investigation of the Therac-25 Accidents}.\\
+    \url{http://courses.cs.vt.edu/~cs3604/lib/Therac_25/Therac_1.html}\\
+    \emph{Visited on November 17, 2012}
+
+\bibitem{windows}
+    \emph{Sunk by Windows NT}. Wired.com.\\
+    \url{http://www.wired.com/science/discoveries/news/1998/07/13987}\\
+    \emph{Visited on November 18, 2012}
+
+\bibitem{unixbug}
+    Poulsen, Kevin. \emph{Software Bug Contributed to Blackout}. SecuritiFocus.\\
+    \url{http://www.securityfocus.com/news/8016}\\
+    \emph{Visited on November 8, 2012}
+
+\bibitem{rocket}
+    Lions, J. L. et al. \emph{ARIANE 5 Flight 501 Failure}.\\
+    \url{http://www.di.unito.it/~damiani/ariane5rep.html}\\
+    \emph{Visited on November 5, 2012}
+
+\bibitem{rocket2}
+    Gleick, James. \emph{A bug and a crash: Sometimes a bug is more than nuiscance}.
+    \url{http://www.around.com/ariane.html}\\
+    \emph{Visited on November 7, 2012}
+
+\bibitem{baber}
+    Baber, Robert L. \emph{Mathematically Rigorous Software Design}.\\
+    \url{http://www.cas.mcmaster.ca/~baber/Courses/46L03/}\\
+    \emph{Visited on November 23, 2012} \end{thebibliography}
+
+\end{document}
