@@ -348,7 +348,7 @@ One of the purposes of adding unique memory addresses to the program variables i
 The dereference operator is a function that takes an address of a program variable in a data environment and gives access to the program variable whose address was given. \medskip
 \end{definition}
 
-For example, let $d$ be the same data environment as before. Executing (\texttt{dereference} $addr1).d$ will result in $\frac{4}{10}$. But executing $(\texttt{dereference } addr1 := 10)$ will change the value of the second variable $x$ in $d$ to $10$.
+For example, let $d$ be the same data environment as before. Executing (\texttt{dereference} $addr1).d$ will result in $\frac{4}{10}$. But executing (\texttt{dereference} $addr1$)$.d$ := 10 will change the value of the second variable $x$ in $d$ to $10$.
 
 This operator opens a new path for a new type of program variable, namely the pointer.
 
